@@ -36,7 +36,7 @@ _start:
     # zapewnienie, że flaga przeniesienia jest = 0
     CLC
 
-    # ustawienie iteratora na dlugosc liczby, będę schodził do 0
+    # ustawienie iteratora na rownowartosc ilosci liczb, będę schodził do 0
     MOVL $index, %edi
 
 loop:
