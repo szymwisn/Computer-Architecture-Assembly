@@ -7,7 +7,7 @@
 #    eax - pierwsza liczba
 #    ebx - druga liczba
 #    edi - iterator
-#    ecx - obsluga ostatniego przeniesienia
+#    ecx - obsluga ostatniej pozyczki
 #
 #    na stosie bedzie przechowywany ostateczny wynik
 #
@@ -19,13 +19,13 @@
 
 .section .data
     liczba1:
-        .long 0x00000003, 0x00000000, 0x77777777, 0x10101010
+        .long 0x00000003, 0x23456789, 0x77777777, 0x10101010
 
     liczba2:
         .long 0xFFFFFFFF, 0x12345678, 0x33333333, 0xF1010101
 
     # ilosc liczb
-    index = (. - liczba1) / 8 - 1
+    index = 3
 
 .globl _start
 
@@ -44,9 +44,9 @@ loop:
     MOVL liczba1(,%edi,4), %eax
     MOVL liczba2(,%edi,4), %ebx
 
-    # dodanie zawartosci obu rejestrów z przeniesieniem
-    # w uproszczeniu: ebx = ebx + eax
-    ADCL %eax, %ebx
+    # odjecie zawartosci obu rejestrów z pozyczka
+    # w uproszczeniu: ebx = ebx - eax
+    SBBL %eax, %ebx
 
     # odlozenie wyniku na stos
     PUSHL %ebx
@@ -55,8 +55,6 @@ loop:
     PUSHF
 
     # dekrementacja iteratora
-    # dlaczego nie działa?
-    # DECL %edi
     SUBL $1, %edi
 
     # porownanie iteratora z 0
@@ -68,12 +66,11 @@ loop:
     # pobranie ze stosu flag
     POPF
     
-    # jesli w ostatnim dodawaniu nie ma przeniesienia, to koniec programu
+    # jesli w ostatnim odejmowaniu nie ma pozyczki, to koniec programu
     JNC end
 
 carry_last:
-    MOVL $1, %ecx
-    PUSHL %ecx
+    # TODO
 
 end: 
     MOVL $1, %eax

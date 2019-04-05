@@ -10,4 +10,4 @@ sub: sub.o
 	ld sub.o -o sub
 
 sub.o: sub.s   
-	as sub.s -o sub.o
+	as --gstabs+ -ggdb sub.s -o sub.o
