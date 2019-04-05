@@ -1,4 +1,4 @@
-all: add sub
+all: add sub mul
 
 add: add.o
 	ld add.o -o add
@@ -11,3 +11,9 @@ sub: sub.o
 
 sub.o: sub.s   
 	as --gstabs+ -ggdb sub.s -o sub.o
+	
+mul: mul.o
+	ld mul.o -o mul
+	
+mul.o: mul.s
+	as --gstabs+ -ggdb mul.s -o mul.o

@@ -1,16 +1,10 @@
 # ##################################
-# Szymon Wiśniewski
-# 241269
-# 05.04.2019, 11:00
-#
 # wykorzystane rejestry i ich przeznaczenie:
 #    eax - pierwsza liczba
 #    ebx - druga liczba
 #    edi - iterator
-#    ecx - obsluga ostatniej pozyczki
 #
 #    na stosie bedzie przechowywany ostateczny wynik
-#    operacje w U2
 #
 # ##################################
 
@@ -20,10 +14,10 @@
 
 .section .data
     liczba1:
-        .long 0x0000032A, 0x23456789, 0x00000000, 0xBBBBBBBB
+        .long 0x00000003, 0x00000000, 0x77777777, 0x10101010
 
     liczba2:
-        .long 0xAB43CEFA, 0x12345678, 0x33333333, 0xAAAAAAAA
+        .long 0x0FFFFFFF, 0x12345678, 0x33333333, 0xF1010101
 
     # ilosc liczb
     index = (. - liczba1) / 8 - 1
@@ -48,17 +42,19 @@ loop:
     MOVL liczba1(,%edi,4), %eax
     MOVL liczba2(,%edi,4), %ebx
 
-    # odjecie zawartosci obu rejestrów z pozyczka
-    # w uproszczeniu: eax = eax - ebx
-    SBBL %ebx, %eax
+    # dodanie zawartosci obu rejestrów z przeniesieniem
+    # w uproszczeniu: ebx = ebx + eax
+    ADCL %eax, %ebx
 
     # odlozenie wyniku na stos
-    PUSHL %eax
+    PUSHL %ebx
 
     # odlozenie flag na stos
     PUSHF
 
     # dekrementacja iteratora
+    # dlaczego nie działa?
+    # DECL %edi
     SUBL $1, %edi
 
     # porownanie iteratora z 0
@@ -70,12 +66,11 @@ loop:
     # pobranie ze stosu flag
     POPF
     
-    # jesli w ostatnim odejmowaniu nie ma pozyczki, to koniec programu
+    # jesli w ostatnim dodawaniu nie ma przeniesienia, to koniec programu
     JNC end
 
-borrow_last:
-    PUSHL $0xF
-
+carry_last:
+    PUSHL $1
 
 end: 
     MOVL $1, %eax
