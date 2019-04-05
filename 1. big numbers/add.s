@@ -7,7 +7,6 @@
 #    eax - pierwsza liczba
 #    ebx - druga liczba
 #    edi - iterator
-#    ecx - obsluga ostatniego przeniesienia
 #
 #    na stosie bedzie przechowywany ostateczny wynik
 #
@@ -32,6 +31,9 @@
 _start:
     # zapewnienie, że flaga przeniesienia jest = 0
     CLC
+
+    # odlozenie flag na stos
+    PUSHF
 
     # ustawienie iteratora na rownowartosc ilosci liczb, będę schodził do 0
     MOVL $index, %edi
@@ -72,8 +74,7 @@ loop:
     JNC end
 
 carry_last:
-    MOVL $1, %ecx
-    PUSHL %ecx
+    PUSHL $1
 
 end: 
     MOVL $1, %eax
