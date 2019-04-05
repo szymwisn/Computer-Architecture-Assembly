@@ -10,6 +10,7 @@
 #    ecx - obsluga ostatniej pozyczki
 #
 #    na stosie bedzie przechowywany ostateczny wynik
+#    operacje w U2
 #
 # ##################################
 
@@ -19,19 +20,22 @@
 
 .section .data
     liczba1:
-        .long 0x00000003, 0x23456789, 0x77777777, 0x10101010
+        .long 0x0000032A, 0x23456789, 0x00000000, 0xBBBBBBBB
 
     liczba2:
-        .long 0xFFFFFFFF, 0x12345678, 0x33333333, 0xF1010101
+        .long 0xAB43CEFA, 0x12345678, 0x33333333, 0xAAAAAAAA
 
     # ilosc liczb
-    index = 3
+    index = (. - liczba1) / 8 - 1
 
 .globl _start
 
 _start:
     # zapewnienie, że flaga przeniesienia jest = 0
     CLC
+
+    # odlozenie flag na stos
+    PUSHF
 
     # ustawienie iteratora na rownowartosc ilosci liczb, będę schodził do 0
     MOVL $index, %edi
@@ -45,11 +49,11 @@ loop:
     MOVL liczba2(,%edi,4), %ebx
 
     # odjecie zawartosci obu rejestrów z pozyczka
-    # w uproszczeniu: ebx = ebx - eax
-    SBBL %eax, %ebx
+    # w uproszczeniu: eax = eax - ebx
+    SBBL %ebx, %eax
 
     # odlozenie wyniku na stos
-    PUSHL %ebx
+    PUSHL %eax
 
     # odlozenie flag na stos
     PUSHF
@@ -69,8 +73,9 @@ loop:
     # jesli w ostatnim odejmowaniu nie ma pozyczki, to koniec programu
     JNC end
 
-carry_last:
-    # TODO
+borrow_last:
+    PUSHL $0xF
+
 
 end: 
     MOVL $1, %eax
