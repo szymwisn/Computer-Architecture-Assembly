@@ -1,5 +1,3 @@
-.code32
-
 .section .text
 
 .section .data
@@ -18,6 +16,8 @@ _start:
 # ===================================
 # ustawienia rejestru control word
 # -----------------------------------
+    # inicjalizacja FPU, przywraca FPU do domyślnego stanu, niejawnie wywołuje FWAIT - synchronizacja z CPU
+    FINIT
 
 cw_settings:
     # zaladownie rejetru CW do rejestru ecx
@@ -52,12 +52,11 @@ cw_settings:
     MOV %ecx, control_word
     FLDCW control_word
 
-    JMP calculator
+    JMP exceptions
 
 # ===================================
 # kalkulator - operacje na num_a oraz num_b
 # -----------------------------------
-
 calculator:
 
 # num_a + num_b
@@ -90,7 +89,6 @@ division:
 # ===================================
 # tutaj generowane sa same wyjatki
 # -----------------------------------
-
 exceptions:
 
 # 0 / dodania liczba
@@ -126,7 +124,6 @@ NaN:
 # ===================================
 # koniec programu
 # -----------------------------------
-
 end: 
     MOV $1, %eax
     MOV $0, %ebx
