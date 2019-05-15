@@ -19,10 +19,11 @@ typedef struct Data {
 Data generate() {
     Data obj;
 
-    obj.a = rand() % 100;
-    obj.b = rand() % 100;
-    obj.c = rand() % 100;
-    obj.d = rand() % 100;
+    // + 1 zeby nie dzielic przez 0
+    obj.a = (rand() % 1000) + 1;
+    obj.b = (rand() % 1000) + 1;
+    obj.c = (rand() % 1000) + 1;
+    obj.d = (rand() % 1000) + 1;
 
     return obj;
 }
@@ -35,94 +36,200 @@ Data generate() {
 
 // funkcja dodawania w SIMD
 // zwraca usredniony czas wykonania operacji
-float addSIMD(int n) {
+double addSIMD(int n) {
     // wynik pojedynczego dzialania
-    float result[4];
-    float num_a[4];
-    float num_b[4];
+    Data result;
+
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
 
     // przechowywanie sumy otrzymanych czasow
-    int sumTime = 0;
+    double sumTime = 0;
 
-    // powtarzam dla okreslonej ilosci liczb
-    for(int i = 0; i < n; i++) {
-
-        // wygenerowanie zestawu danych
-        for(int j = 0; j < 4; j++) {
-            // wygenerowanie pierwszej liczby
-            Data data = generate();
-            num_a[0] = data.a;
-            num_a[1] = data.b;
-            num_a[2] = data.c;
-            num_a[3] = data.d;
-
-            // wygenerowanie drugiej liczby
-            data = generate();
-            num_b[0] = data.a;
-            num_b[1] = data.b;
-            num_b[2] = data.c;
-            num_b[3] = data.d;
-        }
-        
-        // 10 pomiarow
-        for(int j = 0; j < 10; j++) {
-
-            //TODO tutaj odpalanie timera
+    // 10 pomiarow
+    for(int j = 0; j < 10; j++) {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++) {
             
-            for(int k = 0; k < 4; k++) {
-                // TODO instrukcja MOVUPS nie dziala
-                __asm__(
-                    "MOVUPS %1, %%xmm0 \n"         // wpisanie num_a do rejestru xmm0
-                    "MOVUPS %2, %%xmm1 \n"         // wpisanie num_b do xmm1
-                    "ADDPS %%xmm0, %%xmm1\n"       // wykonanie dodawania, wynik w xmm0
-                    "MOVUPS %%xmm0, %0\n"          // zapisanie wyniku do zmiennej "sum"
-                    : "=r"(result[k])              // wyjsciowe zmienne
-                    : "r"(num_a[k]), "r"(num_b[k]) // wejsciowe zmienne
-                    // : "%xmm0", "%xmm1"           // niszczone rejestry (opcjonalnie), czy tego potrzebuje? i tak zawsze w kolejnych dzialaniach bede nadpisywal te rejestry
-                );
-            }
+            num_a = generate();
+            num_b = generate();
 
-            //TODO tutaj wylaczenie timera
+            // pobranie taktu procesora
+            clock_t begin = clock();
+            
+             __asm__(
+                "MOVUPS %1, %%xmm0 \n"         // wpisanie num_a do rejestru xmm0
+                "MOVUPS %2, %%xmm1 \n"         // wpisanie num_b do xmm1
+                "ADDPS %%xmm0, %%xmm1\n"       // wykonanie dodawania, wynik w xmm0
+                "MOVUPS %%xmm0, %0\n"          // zapisanie wyniku do zmiennej "result"
+                : "=g"(result)                 // wyjsciowe zmienne
+                : "g"(num_a), "g"(num_b)       // wejsciowe zmienne
+            );
 
-            // czas pojedynczej iteracji
-            // int time = ;
+             // pobranie taktu procesora
+             clock_t end = clock();
 
-            // suma czasow ze wszystkich iteracji
-            // sumTime += time;
+             // suma czasow ze wszystkich iteracji
+             sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
         }
     }
 
-    // obliczenie sredniej z 10 pomiarow, do tego uwzglednic jeszcze ilosc liczb
-    float avgTime = sumTime / 10;
 
-    // TODO przekonwertowac czas na sekundy, bo prawdopodobnie bedzie w ns
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
     return avgTime;
 }
 
 
-// dla tych wszystkich funkcji niżej bedzie dokładnie to samo co w dodawaniu tylko ze zmianą ADDPS odpowiednio na SUBPS, MULPS oraz DIVPS
-
 //funkcja odejmowania w SIMD
 // zwraca usredniony czas wykonania operacji
-float subSIMD(int n) {
+double subSIMD(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
 
-    return 1;
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "MOVUPS %1, %%xmm0 \n"   // wpisanie num_a do rejestru xmm0
+                "MOVUPS %2, %%xmm1 \n"   // wpisanie num_b do xmm1
+                "SUBPS %%xmm0, %%xmm1\n" // wykonanie odejmowania, wynik w xmm0
+                "MOVUPS %%xmm0, %0\n"    // zapisanie wyniku do zmiennej "result"
+                : "=g"(result)           // wyjsciowe zmienne
+                : "g"(num_a), "g"(num_b) // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
 }
 
 
 // funkcja mnozenia w SIMD
 // zwraca usredniony czas wykonania operacji
-float mulSIMD(int n) {
+double mulSIMD(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
 
-    return 1;
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "MOVUPS %1, %%xmm0 \n"   // wpisanie num_a do rejestru xmm0
+                "MOVUPS %2, %%xmm1 \n"   // wpisanie num_b do xmm1
+                "MULPS %%xmm0, %%xmm1\n" // wykonanie mnozenia, wynik w xmm0
+                "MOVUPS %%xmm0, %0\n"    // zapisanie wyniku do zmiennej "result"
+                : "=g"(result)           // wyjsciowe zmienne
+                : "g"(num_a), "g"(num_b) // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
 }
 
 
 // funkcja dzielenia w SIMD
 // zwraca usredniony czas wykonania operacji
-float divSIMD(int n) {
+double divSIMD(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
 
-    return 1;
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "MOVUPS %1, %%xmm0 \n"   // wpisanie num_a do rejestru xmm0
+                "MOVUPS %2, %%xmm1 \n"   // wpisanie num_b do xmm1
+                "DIVPS %%xmm0, %%xmm1\n" // wykonanie dzielenia, wynik w xmm0
+                "MOVUPS %%xmm0, %0\n"    // zapisanie wyniku do zmiennej "result"
+                : "=g"(result)           // wyjsciowe zmienne
+                : "g"(num_a), "g"(num_b) // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
 }
 
 
@@ -131,50 +238,387 @@ float divSIMD(int n) {
 // SISD
 // ==========================================================
 
+// funkcja dodawania w SISD
+// zwraca usredniony czas wykonania operacji
+double addSISD(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
 
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
 
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
 
-int main()
-{
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "MOVL %1, %%eax \n"          // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"          // wpisanie num_b do ebx
+                "ADDL %%eax, %%ebx\n"        // wykonanie dzialania
+                "MOVL %%eax, %0\n"           // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.a)               // wyjsciowe zmienne
+                : "g"(num_a.a), "g"(num_b.a) // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "ADDL %%eax, %%ebx\n"         // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.b)                // wyjsciowe zmienne
+                : "g"(num_a.b), "g"(num_b.b)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "ADDL %%eax, %%ebx\n"         // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.c)                // wyjsciowe zmienne
+                : "g"(num_a.c), "g"(num_b.c)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "ADDL %%eax, %%ebx\n"         // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.d)                // wyjsciowe zmienne
+                : "g"(num_a.d), "g"(num_b.d)  // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
+}
+
+//funkcja odejmowania w SISD
+// zwraca usredniony czas wykonania operacji
+double subSISD(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
+
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "SUBL %%eax, %%ebx\n"         // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.a)                // wyjsciowe zmienne
+                : "g"(num_a.a), "g"(num_b.a)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "SUBL %%eax, %%ebx\n"         // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.b)                // wyjsciowe zmienne
+                : "g"(num_a.b), "g"(num_b.b)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "SUBL %%eax, %%ebx\n"         // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.c)                // wyjsciowe zmienne
+                : "g"(num_a.c), "g"(num_b.c)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "SUBL %%eax, %%ebx\n"         // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.d)                // wyjsciowe zmienne
+                : "g"(num_a.d), "g"(num_b.d)  // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
+}
+
+// funkcja mnozenia w SISD
+// zwraca usredniony czas wykonania operacji
+double mulSISD(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
+
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "MULL %%ebx\n"                // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.a)              // wyjsciowe zmienne
+                : "g"(num_a.a), "g"(num_b.a)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "MULL %%ebx\n"                // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.b)              // wyjsciowe zmienne
+                : "g"(num_a.b), "g"(num_b.b)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "MULL %%ebx\n"                // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.c)              // wyjsciowe zmienne
+                : "g"(num_a.c), "g"(num_b.c)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
+                "MULL %%ebx\n"                // wykonanie dzialania
+                "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.d)              // wyjsciowe zmienne
+                : "g"(num_a.d), "g"(num_b.d)  // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
+}
+
+// funkcja dzielenia w SISD
+// zwraca usredniony czas wykonania operacji
+double divSISD(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
+
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "MOVL %1, %%eax \n"          // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"          // wpisanie num_b do ebx
+                "MOVL $0, %%edx\n"           // wyzerowanie edx - reszty z dzielenia
+                "DIVL %%ebx\n"               // wykonanie dzialania
+                "MOVL %%eax, %0\n"           // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.a)             // wyjsciowe zmienne
+                : "g"(num_a.a), "g"(num_b.a) // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"          // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"          // wpisanie num_b do ebx
+                "MOVL $0, %%edx\n"           // wyzerowanie edx - reszty z dzielenia
+                "DIVL %%ebx\n"               // wykonanie dzialania
+                "MOVL %%eax, %0\n"           // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.b)             // wyjsciowe zmienne
+                : "g"(num_a.b), "g"(num_b.b) // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"          // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"          // wpisanie num_b do ebx
+                "MOVL $0, %%edx\n"           // wyzerowanie edx - reszty z dzielenia
+                "DIVL %%ebx\n"               // wykonanie dzialania
+                "MOVL %%eax, %0\n"           // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.c)             // wyjsciowe zmienne
+                : "g"(num_a.c), "g"(num_b.c) // wejsciowe zmienne
+            );
+
+            __asm__(
+                "MOVL %1, %%eax \n"          // wpisanie num_a do rejestru eax
+                "MOVL %2, %%ebx \n"          // wpisanie num_b do ebx
+                "MOVL $0, %%edx\n"           // wyzerowanie edx - reszty z dzielenia
+                "DIVL %%ebx\n"               // wykonanie dzialania
+                "MOVL %%eax, %0\n"           // zapisanie wyniku do zmiennej "result"
+                : "=g"(result.d)             // wyjsciowe zmienne
+                : "g"(num_a.d), "g"(num_b.d) // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
+}
+
+int main() {
     // zagwarantowanie "prawdziwszej" losowosci
     srand(time(NULL));
 
     // ilosc liczb
     int n;
 
+    FILE *f;
+    f = fopen("results.txt", "w");
+
+
+
     // ==========================================================
     // SIMD
 
     n = 2048;
-    printf("Typ obliczen: SIMD\n");
-    printf("Liczba liczb: %d\n", n);
-    printf("Sredni czas [s]:\n");
-    printf("+ %f\n", addSIMD(n));
-    printf("- %f\n", divSIMD(n));
-    printf("* %f\n", mulSIMD(n));
-    printf("/ %f\n", divSIMD(n));
+    fprintf(f, "Typ obliczen: SIMD\n");
+    fprintf(f, "Liczba liczb: %d\n", n);
+    fprintf(f, "Sredni czas [s]:\n");
+    fprintf(f, "+ %f\n", addSIMD(n));
+    fprintf(f, "- %f\n", subSIMD(n));
+    fprintf(f, "* %f\n", mulSIMD(n));
+    fprintf(f, "/ %f\n", divSIMD(n));
 
     n = 4096;
-    printf("\nTyp obliczen: SIMD\n");
-    printf("Liczba liczb: %d\n", n);
-    printf("Sredni czas [s]:\n");
-    printf("+ %f\n", addSIMD(n));
-    printf("- %f\n", divSIMD(n));
-    printf("* %f\n", mulSIMD(n));
-    printf("/ %f\n", divSIMD(n));
+    fprintf(f, "\nTyp obliczen: SIMD\n");
+    fprintf(f, "Liczba liczb: %d\n", n);
+    fprintf(f, "Sredni czas [s]:\n");
+    fprintf(f, "+ %f\n", addSIMD(n));
+    fprintf(f, "- %f\n", subSIMD(n));
+    fprintf(f, "* %f\n", mulSIMD(n));
+    fprintf(f, "/ %f\n", divSIMD(n));
 
     n = 8192;
-    printf("\nTyp obliczen: SIMD\n");
-    printf("Liczba liczb: %d\n", n);
-    printf("Sredni czas [s]:\n");
-    printf("+ %f\n", addSIMD(n));
-    printf("- %f\n", divSIMD(n));
-    printf("* %f\n", mulSIMD(n));
-    printf("/ %f\n", divSIMD(n));
+    fprintf(f, "\nTyp obliczen: SIMD\n");
+    fprintf(f, "Liczba liczb: %d\n", n);
+    fprintf(f, "Sredni czas [s]:\n");
+    fprintf(f, "+ %f\n", addSIMD(n));
+    fprintf(f, "- %f\n", subSIMD(n));
+    fprintf(f, "* %f\n", mulSIMD(n));
+    fprintf(f, "/ %f\n\n\n\n", divSIMD(n));
+
 
 
     // ==========================================================
     // SISD
+
+    n = 2048;
+    fprintf(f, "Typ obliczen: SISD\n");
+    fprintf(f, "Liczba liczb: %d\n", n);
+    fprintf(f, "Sredni czas [s]:\n");
+    fprintf(f, "+ %f\n", addSISD(n));
+    fprintf(f, "- %f\n", subSISD(n));
+    fprintf(f, "* %f\n", mulSISD(n));
+    fprintf(f, "/ %f\n", divSISD(n));
+
+    n = 4096;
+    fprintf(f, "\nTyp obliczen: SISD\n");
+    fprintf(f, "Liczba liczb: %d\n", n);
+    fprintf(f, "Sredni czas [s]:\n");
+    fprintf(f, "+ %f\n", addSISD(n));
+    fprintf(f, "- %f\n", subSISD(n));
+    fprintf(f, "* %f\n", mulSISD(n));
+    fprintf(f, "/ %f\n", divSISD(n));
+
+    n = 8192;
+    fprintf(f, "\nTyp obliczen: SISD\n");
+    fprintf(f, "Liczba liczb: %d\n", n);
+    fprintf(f, "Sredni czas [s]:\n");
+    fprintf(f, "+ %f\n", addSISD(n));
+    fprintf(f, "- %f\n", subSISD(n));
+    fprintf(f, "* %f\n", mulSISD(n));
+    fprintf(f, "/ %f\n", divSISD(n));
 
     return 0;
 }
