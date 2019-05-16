@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-// do dyspozycji mam 8 128-bitowych rejestrów podzielonych na 4 32-bitowe elementy zmiennopozycyjne dodającaej precyzji
+// do dyspozycji mam 8 128-bitowych rejestrów podzielonych na 4 32-bitowe elementy zmiennopozycyjne pojedynczej precyzji
 // xmm0 - xmm7
 // rejestr sterujący mxcsr
 
@@ -437,7 +437,7 @@ double mulSISD(int n) {
             __asm__(
                 "MOVL %1, %%eax \n"           // wpisanie num_a do rejestru eax
                 "MOVL %2, %%ebx \n"           // wpisanie num_b do ebx
-                "MULL %%ebx\n"                // wykonanie dzialania
+                "MULL %%eax\n"                // wykonanie dzialania
                 "MOVL %%eax, %0\n"            // zapisanie wyniku do zmiennej "result"
                 : "=g"(result.c)              // wyjsciowe zmienne
                 : "g"(num_a.c), "g"(num_b.c)  // wejsciowe zmienne
@@ -546,6 +546,299 @@ double divSISD(int n) {
     return avgTime;
 }
 
+
+
+// ==========================================================
+// SISD - 2 wariant
+// ==========================================================
+
+// funkcja dodawania w SISD
+// zwraca usredniony czas wykonania operacji
+double addSISD2(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
+
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FADDP\n"                     // wykonanie operacji
+                : "=m"(result.a)              // wyjsciowe zmienne
+                : "m"(num_a.a), "m"(num_b.a)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FADDP\n"                     // wykonanie operacji
+                : "=m"(result.b)              // wyjsciowe zmienne
+                : "m"(num_a.b), "m"(num_b.b)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FADDP\n"                     // wykonanie operacji
+                : "=m"(result.c)              // wyjsciowe zmienne
+                : "m"(num_a.c), "m"(num_b.c)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FADDP\n"                     // wykonanie operacji
+                : "=m"(result.d)              // wyjsciowe zmienne
+                : "m"(num_a.d), "m"(num_b.d)  // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
+}
+
+//funkcja odejmowania w SISD
+// zwraca usredniony czas wykonania operacji
+double subSISD2(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
+
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FSUBP\n"                     // wykonanie operacji
+                : "=m"(result.a)              // wyjsciowe zmienne
+                : "m"(num_a.a), "m"(num_b.a)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FSUBP\n"                     // wykonanie operacji
+                : "=m"(result.b)              // wyjsciowe zmienne
+                : "m"(num_a.b), "m"(num_b.b)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FSUBP\n"                     // wykonanie operacji
+                : "=m"(result.c)              // wyjsciowe zmienne
+                : "m"(num_a.c), "m"(num_b.c)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FSUBP\n"                     // wykonanie operacji
+                : "=m"(result.d)              // wyjsciowe zmienne
+                : "m"(num_a.d), "m"(num_b.d)  // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
+}
+
+// funkcja mnozenia w SISD
+// zwraca usredniony czas wykonania operacji
+double mulSISD2(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
+
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FMULP\n"                     // wykonanie operacji
+                : "=m"(result.a)              // wyjsciowe zmienne
+                : "m"(num_a.a), "m"(num_b.a)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FMULP\n"                     // wykonanie operacji
+                : "=m"(result.b)              // wyjsciowe zmienne
+                : "m"(num_a.b), "m"(num_b.b)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FMULP\n"                     // wykonanie operacji
+                : "=m"(result.c)              // wyjsciowe zmienne
+                : "m"(num_a.c), "m"(num_b.c)  // wejsciowe zmienne
+            );
+            
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FMULP\n"                     // wykonanie operacji
+                : "=m"(result.d)              // wyjsciowe zmienne
+                : "m"(num_a.d), "m"(num_b.d)  // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
+}
+
+// funkcja dzielenia w SISD
+// zwraca usredniony czas wykonania operacji
+double divSISD2(int n) {
+    // wynik pojedynczego dzialania
+    Data result;
+
+    // dodawane liczby
+    Data num_a;
+    Data num_b;
+
+    // przechowywanie sumy otrzymanych czasow
+    double sumTime = 0;
+
+    // 10 pomiarow
+    for (int j = 0; j < 10; j++)
+    {
+        // dzialanie na n liczb
+        for (int i = 0; i < n; i++)
+        {
+
+            num_a = generate();
+            num_b = generate();
+
+            // pobranie taktu procesora
+            clock_t begin = clock();
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FDIVP\n"                     // wykonanie operacji
+                : "=m"(result.a)              // wyjsciowe zmienne
+                : "m"(num_a.a), "m"(num_b.a)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FDIVP\n"                     // wykonanie operacji
+                : "=m"(result.b)              // wyjsciowe zmienne
+                : "m"(num_a.b), "m"(num_b.b)  // wejsciowe zmienne
+            );
+
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FDIVP\n"                     // wykonanie operacji
+                : "=m"(result.c)              // wyjsciowe zmienne
+                : "m"(num_a.c), "m"(num_b.c)  // wejsciowe zmienne
+            );
+            
+            __asm__(
+                "FLD %2\n"                    // zaladowanie pierwszej liczby
+                "FLD %1\n"                    // zaladowanie drugiej liczby
+                "FDIVP\n"                     // wykonanie operacji
+                : "=m"(result.d)              // wyjsciowe zmienne
+                : "m"(num_a.d), "m"(num_b.d)  // wejsciowe zmienne
+            );
+
+            // pobranie taktu procesora
+            clock_t end = clock();
+
+            // suma czasow ze wszystkich iteracji
+            sumTime += (double)(end - begin) / CLOCKS_PER_SEC;
+        }
+    }
+
+    // obliczenie sredniej z 10 pomiarow
+    double avgTime = sumTime / 10;
+
+    return avgTime;
+}
+
 int main() {
     // zagwarantowanie "prawdziwszej" losowosci
     srand(time(NULL));
@@ -586,7 +879,9 @@ int main() {
     fprintf(f, "+ %f\n", addSIMD(n));
     fprintf(f, "- %f\n", subSIMD(n));
     fprintf(f, "* %f\n", mulSIMD(n));
-    fprintf(f, "/ %f\n\n\n\n", divSIMD(n));
+    fprintf(f, "/ %f\n", divSIMD(n));
+
+    fprintf(f, "\n============================================\n\n");
 
 
 
@@ -619,6 +914,40 @@ int main() {
     fprintf(f, "- %f\n", subSISD(n));
     fprintf(f, "* %f\n", mulSISD(n));
     fprintf(f, "/ %f\n", divSISD(n));
+
+    fprintf(f, "\n============================================\n\n");
+
+
+
+    // ==========================================================
+    // SISD 2
+
+    n = 2048;
+    fprintf(f, "Typ obliczen: SISD2\n");
+    fprintf(f, "Liczba liczb: %d\n", n);
+    fprintf(f, "Sredni czas [s]:\n");
+    fprintf(f, "+ %f\n", addSISD2(n));
+    fprintf(f, "- %f\n", subSISD2(n));
+    fprintf(f, "* %f\n", mulSISD2(n));
+    fprintf(f, "/ %f\n", divSISD2(n));
+
+    n = 4096;
+    fprintf(f, "\nTyp obliczen: SISD2\n");
+    fprintf(f, "Liczba liczb: %d\n", n);
+    fprintf(f, "Sredni czas [s]:\n");
+    fprintf(f, "+ %f\n", addSISD2(n));
+    fprintf(f, "- %f\n", subSISD2(n));
+    fprintf(f, "* %f\n", mulSISD2(n));
+    fprintf(f, "/ %f\n", divSISD2(n));
+
+    n = 8192;
+    fprintf(f, "\nTyp obliczen: SISD2\n");
+    fprintf(f, "Liczba liczb: %d\n", n);
+    fprintf(f, "Sredni czas [s]:\n");
+    fprintf(f, "+ %f\n", addSISD2(n));
+    fprintf(f, "- %f\n", subSISD2(n));
+    fprintf(f, "* %f\n", mulSISD2(n));
+    fprintf(f, "/ %f\n", divSISD2(n));
 
     return 0;
 }
